@@ -26,7 +26,7 @@ To run maxRecon, you will need to have the following installed:
 
 1. Clone this repository:
    `bash
-   git clone https://github.com/yourusername/maxRecon.git
+   git clone https://github.com/max5010cs/maximumRecon.git
    cd path/to/backend
 npm install
 npm start
