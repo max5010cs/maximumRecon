@@ -1,0 +1,74 @@
+.tool-container {
+    padding: 2rem;
+    font-family: sans-serif;
+    max-width: 600px;
+    margin: auto;
+    text-align: center;
+  }
+  
+  input {
+    padding: 0.5rem;
+    margin-right: 1rem;
+    width: 60%;
+  }
+  
+  button {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+  
+  .spinner {
+    display: inline-block;
+    margin-left: 8px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ccc;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .status {
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+  
+  .status.error {
+    color: red;
+  }
+  
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .modal {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    text-align: left;
+  }
+  
+  .modal h3 {
+    margin-top: 0;
+  }
+  
+  .modal button {
+    margin-top: 1rem;
+  }
