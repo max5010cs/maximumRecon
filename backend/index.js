@@ -36,16 +36,33 @@ const runNmapScan = (domain) => {
   });
 };
 
+
+
 // Analyze Nmap results
 const analyzeScanResults = (output) => {
   const vulnerabilities = [];
   const openPorts = [];
   const lines = output.split('\n');
 
+  const riskyServices = [
+    { keyword: /ftp/i, risk: 'FTP is insecure by default (no encryption).', severity: 'High', recommendation: 'Use SFTP or FTPS instead.' },
+    { keyword: /telnet/i, risk: 'Telnet transmits data in plaintext.', severity: 'High', recommendation: 'Replace with SSH.' },
+    { keyword: /rsh/i, risk: 'Remote Shell (rsh) is obsolete and insecure.', severity: 'High', recommendation: 'Disable and use SSH instead.' },
+    { keyword: /smb/i, risk: 'SMBv1 is vulnerable to EternalBlue.', severity: 'Critical', recommendation: 'Use SMBv2/v3 or disable SMB altogether.' },
+    { keyword: /rdp/i, risk: 'RDP can be vulnerable without strong policies.', severity: 'Medium', recommendation: 'Enforce strong passwords and enable NLA/2FA.' },
+  ];
+
+  const outdatedPatterns = [
+    { regex: /Apache.*2\.2/, message: 'Apache 2.2 is outdated.', severity: 'High', recommendation: 'Upgrade to Apache 2.4 or newer.' },
+    { regex: /OpenSSH.*6\./, message: 'Outdated OpenSSH version detected.', severity: 'Medium', recommendation: 'Upgrade to OpenSSH 9.x or newer.' },
+    { regex: /nginx.*1\.14/, message: 'Nginx 1.14 is old.', severity: 'Medium', recommendation: 'Update to 1.24+.' },
+    { regex: /MySQL.*5\.5/, message: 'MySQL 5.5 is no longer maintained.', severity: 'High', recommendation: 'Upgrade to MySQL 8.x.' },
+  ];
+
   lines.forEach((line) => {
     if (line.includes('open')) {
       const parts = line.trim().split(/\s+/);
-      const portProto = parts[0]; // e.g., 80/tcp
+      const portProto = parts[0];
       const port = portProto.split('/')[0];
       const protocol = portProto.split('/')[1];
       const service = parts[2] || '';
@@ -53,23 +70,46 @@ const analyzeScanResults = (output) => {
 
       openPorts.push({ port, protocol, service, product });
 
-      // Check for insecure services
-      if (service.match(/ftp|telnet|rsh/i)) {
-        vulnerabilities.push(`Insecure service detected on port ${port}: ${service}`);
-      }
+      // Detect risky services
+      riskyServices.forEach(({ keyword, risk, severity, recommendation }) => {
+        if (service.match(keyword)) {
+          vulnerabilities.push({
+            description: `${risk} on port ${port} (${service})`,
+            severity,
+            recommendation,
+            affectedPort: port
+          });
+        }
+      });
 
-      // Check for outdated versions (simple logic)
-      if (product.match(/Apache.*2\.2/)) {
-        vulnerabilities.push(`Outdated Apache version on port ${port}: ${product}`);
-      }
-      if (product.match(/OpenSSH.*6\./)) {
-        vulnerabilities.push(`Potential outdated OpenSSH on port ${port}: ${product}`);
+      // Detect outdated versions
+      outdatedPatterns.forEach(({ regex, message, severity, recommendation }) => {
+        if (product.match(regex)) {
+          vulnerabilities.push({
+            description: `${message} on port ${port}: ${product}`,
+            severity,
+            recommendation,
+            affectedPort: port
+          });
+        }
+      });
+
+      // Signature-based banner checks (extendable)
+      if (product.includes('MiniServ/0.01')) {
+        vulnerabilities.push({
+          description: 'MiniServ/0.01 has known vulnerabilities.',
+          severity: 'Medium',
+          recommendation: 'Update to a secure version or disable unused services.',
+          affectedPort: port
+        });
       }
     }
   });
 
   return { openPorts, vulnerabilities };
 };
+
+
 
 // Endpoint to run scan
 app.get('/scan', async (req, res) => {
