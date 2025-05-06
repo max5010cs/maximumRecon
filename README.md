@@ -26,11 +26,30 @@ To run maxRecon, you will need to have the following installed:
 
 1. Clone this repository:
    `bash
-   git clone https://github.com/max5010cs/maximumRecon.git
+   git clone https://github.com/yourusername/maxRecon.git
    cd path/to/backend
 npm install
 npm start
-   
+
+#more clear steps {
+
+###  INITIAL FRONTEND SETUP
+
+ npm create vite@latest frontend --template react-ts
+cd forontend
+npm install 
+npm run dev
+npm install axios react-router-dom
+
+
+### INITIAL BACKEND SETUP
+ 
+npm init -y
+npm install express cors
+npm install --save-dev nodemon
+script is configured to start rather than test
+npm start
+}
    
    
 ### Disclaimer

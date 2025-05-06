@@ -4,7 +4,7 @@ Copyright (c) 2025 [Max]. All Rights Reserved.
 
 ## License Terms
 
-By using, copying, modifying, or distributing the maxRecon tool ("the Tool"), you agree to comply with the following terms:
+By using, copying, modifying, or distributing the maxRecon tool, you agree to comply with the following terms:
 
 1. Non-Commercial Use: You may not use this Tool for commercial purposes or any form of unauthorized distribution or exploitation without explicit written consent from [Max].
 

@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const nmap = require('node-nmap');
 const url = require('url');
 const { exec } = require('child_process');
 
@@ -10,16 +9,16 @@ const port = 5000;
 app.use(cors());
 app.use(express.json());
 
+// Sanitize domain input
 const sanitizeDomain = (domain) => {
-  // Sanitize domain: Remove 'http://', 'https://' if user includes them
   const parsedUrl = url.parse(domain);
   return parsedUrl.hostname || domain;
 };
 
+// Run the nmap scan
 const runNmapScan = (domain) => {
   return new Promise((resolve, reject) => {
-    // Advanced nmap scan command with service version and OS detection
-    const nmapCommand = `nmap -sV -O --script=vuln ${domain}`;  // You can adjust this command if needed
+    const nmapCommand = `nmap -T4 -sV -O --top-ports 100 --script=vuln --min-rate=1000 -Pn ${domain}`;
     console.log(`Running nmap scan on ${domain}...`);
 
     exec(nmapCommand, (error, stdout, stderr) => {
@@ -31,12 +30,13 @@ const runNmapScan = (domain) => {
         console.error(`stderr: ${stderr}`);
         return reject(stderr);
       }
+      console.log("Nmap scan results received.");
       resolve(stdout);
     });
   });
 };
 
-// Helper to analyze nmap output for vulnerabilities
+// Analyze Nmap results
 const analyzeScanResults = (output) => {
   const vulnerabilities = [];
   const openPorts = [];
@@ -44,19 +44,26 @@ const analyzeScanResults = (output) => {
 
   lines.forEach((line) => {
     if (line.includes('open')) {
-      const portInfo = line.split('/');
-      const port = portInfo[0];
-      const service = portInfo[1]?.trim();
-      openPorts.push({ port, service });
-      
-      // Simple vulnerability check for specific services
-      if (service && (service.includes('ftp') || service.includes('telnet'))) {
-        vulnerabilities.push(`Warning: Insecure service detected - ${service}`);
+      const parts = line.trim().split(/\s+/);
+      const portProto = parts[0]; // e.g., 80/tcp
+      const port = portProto.split('/')[0];
+      const protocol = portProto.split('/')[1];
+      const service = parts[2] || '';
+      const product = parts.slice(3).join(' ') || '';
+
+      openPorts.push({ port, protocol, service, product });
+
+      // Check for insecure services
+      if (service.match(/ftp|telnet|rsh/i)) {
+        vulnerabilities.push(`Insecure service detected on port ${port}: ${service}`);
       }
 
-      // Detect version-related vulnerabilities (simplified check)
-      if (service && service.includes('Apache')) {
-        vulnerabilities.push('Potential vulnerability: Apache service detected');
+      // Check for outdated versions (simple logic)
+      if (product.match(/Apache.*2\.2/)) {
+        vulnerabilities.push(`Outdated Apache version on port ${port}: ${product}`);
+      }
+      if (product.match(/OpenSSH.*6\./)) {
+        vulnerabilities.push(`Potential outdated OpenSSH on port ${port}: ${product}`);
       }
     }
   });
@@ -64,6 +71,7 @@ const analyzeScanResults = (output) => {
   return { openPorts, vulnerabilities };
 };
 
+// Endpoint to run scan
 app.get('/scan', async (req, res) => {
   const { domain } = req.query;
 
@@ -72,13 +80,17 @@ app.get('/scan', async (req, res) => {
   }
 
   const sanitizedDomain = sanitizeDomain(domain);
+
   try {
     const nmapResults = await runNmapScan(sanitizedDomain);
     const { openPorts, vulnerabilities } = analyzeScanResults(nmapResults);
-    
+
     res.json({
-      openPorts,
-      vulnerabilities,
+      rawOutput: nmapResults,
+      analysis: {
+        openPorts,
+        vulnerabilities,
+      },
       message: 'Scan completed successfully',
     });
   } catch (error) {
@@ -87,6 +99,7 @@ app.get('/scan', async (req, res) => {
   }
 });
 
+// Start server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
