@@ -6,7 +6,12 @@ const ToolPage = () => {
   const [domain, setDomain] = useState('');
   const [status, setStatus] = useState('');
   const [ports, setPorts] = useState<{ port: string; service: string }[]>([]);
-  const [vulns, setVulns] = useState<string[]>([]);
+  const [vulns, setVulns] = useState<{
+    description: string;
+    severity: string;
+    recommendation: string;
+    affectedPort: string;
+  }[]>([]);
   const [rawOutput, setRawOutput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -122,9 +127,28 @@ const ToolPage = () => {
                   <>
                     <h4>Vulnerability Analysis</h4>
                     <ul className="fade-in">
-                      {vulns.map((v, i) => (
-                        <li key={i}>{v}</li>
-                      ))}
+                    {vulns.length > 0 && (
+                                  <>
+                          <button className="toggle-btn" onClick={() => setShowVulns(!showVulns)}>
+                          {showVulns ? 'Hide Vulnerabilities' : 'Show Vulnerabilities'}
+                          </button>
+                          {showVulns && (
+                                   <>
+                                  <h4>Vulnerability Analysis</h4>
+                                  <ul className="fade-in">
+                                  {vulns.map((v, i) => (
+                                  <li key={i}>
+                                   <p><strong>Description:</strong> {v.description}</p>
+                                   <p><strong>Severity:</strong> {v.severity}</p>
+                                   <p><strong>Recommendation:</strong> {v.recommendation}</p>
+                                   <p><strong>Affected Port:</strong> {v.affectedPort}</p>
+                                  </li>
+                                ))}
+                      </ul>
+                    </>
+                   )}
+                  </>
+                )}
                     </ul>
                   </>
                 )}
