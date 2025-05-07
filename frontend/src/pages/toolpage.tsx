@@ -1,20 +1,10 @@
-//import * as React from 'react';
+
 import { useState } from 'react';
 import axios from 'axios';
 import './toolpage.css';
 
-type Flag = {
-  flag: string;
-  label: string;
-  description: string;
-};
-
-type ToolConfig = {
-  name: string;
-  key: string;
-  description: string;
-  flags: Flag[];
-};
+type Flag = { flag: string; label: string; description: string; };
+type ToolConfig = { name: string; key: string; description: string; flags: Flag[]; };
 
 const tools: ToolConfig[] = [
   {
@@ -67,15 +57,13 @@ const ToolPage = () => {
   const [domain, setDomain] = useState('');
   const [selectedTools, setSelectedTools] = useState<{ [key: string]: boolean }>({});
   const [selectedFlags, setSelectedFlags] = useState<{ [key: string]: string[] }>({});
-  const [log, setLog] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [results, setResults] = useState<{ [key: string]: { raw?: string; report?: string; error?: string } }>({});
+  const [showModal, setShowModal] = useState(false);
 
   const handleToolChange = (toolKey: string) => {
-    setSelectedTools((prev) => ({
-      ...prev,
-      [toolKey]: !prev[toolKey],
-    }));
+    setSelectedTools((prev) => ({ ...prev, [toolKey]: !prev[toolKey] }));
   };
 
   const handleFlagChange = (toolKey: string, flag: string) => {
@@ -88,31 +76,44 @@ const ToolPage = () => {
     });
   };
 
-  const handleScan = async () => {
+
+const handleScan = async () => {
     setError('');
-    setLog('');
     setLoading(true);
+    setResults({});
     const selected = Object.keys(selectedTools).filter((key) => selectedTools[key]);
-    const flagsForSelected = selected.reduce((acc: any, key) => {
+    const flagsForSelected = selected.reduce((acc: Record<string, string[]>, key) => {
       acc[key] = selectedFlags[key] || [];
       return acc;
     }, {});
 
-    setLog('Sending scan request to backend...');
-
     try {
-      const res = await axios.post('http://localhost:5000/scan', {
+      const res = await axios.post('http://localhost:3000/scan', {
         domain,
         tools: selected,
         flags: flagsForSelected,
       });
-
-      setLog(`Scan successful:\n${res.data.message || 'See backend logs for results.'}`);
+      setResults(res.data);
+      setShowModal(true);
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Scan failed.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  const handleDownload = (text: string, tool: string, type: string) => {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${tool}_${type}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -142,32 +143,32 @@ const ToolPage = () => {
 
             {selectedTools[tool.key] && (
               <div className="flags-section">
-<table className="flags-table">
-  <thead>
-    <tr>
-      <th></th>
-      <th>Flag</th>
-      <th>Label</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    {tool.flags.map((f) => (
-      <tr key={f.flag}>
-        <td>
-          <input
-            type="checkbox"
-            checked={(selectedFlags[tool.key] || []).includes(f.flag)}
-            onChange={() => handleFlagChange(tool.key, f.flag)}
-          />
-        </td>
-        <td className="flag-code">{f.flag}</td>
-        <td className="flag-label">{f.label}</td>
-        <td className="flag-description">{f.description}</td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+                <table className="flags-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Flag</th>
+                      <th>Label</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tool.flags.map((f) => (
+                      <tr key={f.flag}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={(selectedFlags[tool.key] || []).includes(f.flag)}
+                            onChange={() => handleFlagChange(tool.key, f.flag)}
+                          />
+                        </td>
+                        <td className="flag-code">{f.flag}</td>
+                        <td className="flag-label">{f.label}</td>
+                        <td className="flag-description">{f.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -179,7 +180,46 @@ const ToolPage = () => {
       </button>
 
       {error && <p className="error-msg">{error}</p>}
-      {log && <pre className="log-output">{log}</pre>}
+
+      {showModal && (
+        <div className="modal-backdrop" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Scan Results</h3>
+            {Object.entries(results).map(([tool, result]) => (
+              <div key={tool} className="result-block">
+                <h4>{tool.toUpperCase()}</h4>
+                {result.error ? (
+                  <p className="error-msg">{result.error}</p>
+
+
+                ) : (
+                  <>
+                    {
+                      ['raw', 'report'].map((type) => {
+                        const safeType = type as 'raw' | 'report';
+                      
+                        return (
+                          <div key={type} className="result-section">
+                            <h5>{type.toUpperCase()}</h5>
+                            <button onClick={() => handleCopy(result[safeType] || '')}>Copy</button>
+                            <button onClick={() => handleDownload(result[safeType] || '', tool, type)}>Download</button>
+                            <pre className="log-output">
+  {typeof result[safeType] === 'string'
+    ? result[safeType]
+    : JSON.stringify(result[safeType], null, 2)}
+</pre>
+                          </div>
+                        );
+                      })
+                    }
+                  </>
+                )}
+              </div>
+            ))}
+            <button className="close-modal" onClick={() => setShowModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
