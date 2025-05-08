@@ -1,6 +1,6 @@
 GET / HTTP/1.1
 Host: example.com
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 14.0) AppleWebKit/618.25.8 (KHTML, like Gecko) Version/17.3 Safari/618.25.8
+User-Agent: Mozilla/5.0 (Knoppix; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0
 Accept-Charset: utf-8
 Accept-Encoding: gzip
 
@@ -8,9 +8,9 @@ HTTP/1.1 200 OK
 Connection: close
 Accept-Ranges: bytes
 Alt-Svc: h3=":443"; ma=93600,h3-29=":443"; ma=93600,quic=":443"; ma=93600; v="43"
-Cache-Control: max-age=748
+Cache-Control: max-age=2744
 Content-Type: text/html
-Date: Thu, 08 May 2025 15:58:31 GMT
+Date: Thu, 08 May 2025 16:18:50 GMT
 Etag: "84238dfc8092e5d9c0dac8ef93371a07:1736799080.121134"
 Last-Modified: Mon, 13 Jan 2025 20:11:20 GMT
 Vary: Accept-Encoding
